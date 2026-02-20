@@ -375,10 +375,11 @@ tbody td.primary{color:var(--text0);font-weight:600}
 
 /* Captions */
 .aria-captions{
-  background:rgba(0,0,0,0.35);border-radius:8px;padding:8px 10px;
-  font-size:11px;color:var(--text1);font-family:var(--font-m);font-weight:300;
-  line-height:1.7;min-height:42px;border:1px solid var(--border);width:100%;
-  font-style:italic;max-height:120px;overflow-y:auto;
+  background:rgba(0,0,0,0.45);border-radius:10px;padding:12px 14px;
+  font-size:13px;color:#c8e6ff;font-family:var(--font-m);font-weight:400;
+  line-height:1.9;min-height:100px;border:1px solid rgba(0,170,255,0.2);width:100%;
+  font-style:italic;height:220px;overflow-y:auto;word-wrap:break-word;word-break:break-word;
+  letter-spacing:0.01em;
 }
 [data-theme="light"] .aria-captions{background:rgba(0,30,80,0.04);color:var(--text1)}
 .aria-chat{flex:1;overflow-y:auto;padding:10px}
@@ -516,6 +517,13 @@ tbody td.primary{color:var(--text0);font-weight:600}
 .notif.ok{border-color:var(--ok);background:rgba(0,145,77,0.1)}
 .notif.err{border-color:var(--urgent);background:rgba(232,0,30,0.1)}
 @keyframes notif-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.ai-impression-panel{background:rgba(0,20,40,0.95);border:1px solid rgba(0,212,170,0.4);border-radius:10px;padding:16px;margin-bottom:10px;position:relative;min-height:120px;box-shadow:0 0 20px rgba(0,212,170,0.15)}
+.ai-impression-panel::before{content:"◈ AI IMPRESSION";position:absolute;top:-10px;left:12px;background:var(--bg0);padding:0 8px;font-size:9px;font-weight:900;letter-spacing:0.2em;color:#00d4aa}
+.ai-impression-text{font-family:"Courier New",monospace;font-size:13px;line-height:1.7;color:#e0fff8;white-space:pre-wrap;min-height:80px}
+.ai-impression-text.empty{color:rgba(0,212,170,0.3);font-style:italic}
+.ai-impression-meta{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,212,170,0.2)}
+.ai-impression-badge{background:rgba(0,212,170,0.12);border:1px solid rgba(0,212,170,0.3);color:#00d4aa;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:0.1em}
+.ai-speak-btn{background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.3);color:#00d4aa;padding:3px 10px;border-radius:20px;font-size:9px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -860,7 +868,7 @@ function App() {
   const [filter,setFilter] = useState({mod:'',status:'',priority:'',search:''});
   const [report,setReport] = useState({indication:'',technique:'',findings:'',impression:'',sign_status:'Draft'});
   const [ariaState,setAriaState] = useState('idle');
-  const [ariaMessages,setAriaMessages] = useState([{role:'aria',body:"Hello. I'm ARIA, your Advanced Radiology Intelligence Assistant. I'm here to help with study prioritisation, workflow queries, and report assistance. How can I help you today?"}]);
+  const [ariaMessages,setAriaMessages] = useState([]);
   const [ariaInput,setAriaInput] = useState('');
   const [ariaCaptions,setAriaCaptions] = useState("Ready. Select a study or ask me anything.");
   const [ariaVoice,setAriaVoice] = useState('nova');
@@ -874,6 +882,7 @@ function App() {
   const [notif,setNotif] = useState(null);
   const [viewerTool,setViewerTool] = useState('pan');
   const fileRef = useRef();
+  const captionsRef = useRef();
 
   useEffect(()=>{ document.documentElement.setAttribute('data-theme',theme); },[theme]);
 
@@ -889,7 +898,7 @@ function App() {
       if (!r.ok) throw new Error('Invalid username or password');
       const d = await r.json();
       setSession(d);
-      await ariaSpeak(`Welcome to ARIA, ${d.username}. Your radiology workbench is ready. ${Math.floor(Math.random()*3)+1} critical studies require immediate attention.`);
+      await ariaSpeak(`Welcome to ARIA, ${d.username}. Your radiology workbench is ready.`);
     } catch(e){ setLoginErr(e.message); }
     setLoginLoading(false);
   };
@@ -917,6 +926,14 @@ function App() {
   },[tok]);
 
   useEffect(()=>{ if(tok){ loadWorklist(); loadStats(); } },[tok,filter]);
+
+  // Auto-scroll captions to keep highlighted word visible
+  useEffect(()=>{
+    if(captionsRef.current){
+      const highlighted = captionsRef.current.querySelector('span[style*="00d4aa"]');
+      if(highlighted) highlighted.scrollIntoView({block:'nearest',behavior:'smooth'});
+    }
+  },[ariaCaptions]);
 
   // Load study detail
   const openStudy = async s => {
@@ -1033,17 +1050,60 @@ function App() {
   const toggleRecording = () => { if(isRecording) stopRecording(); else startRecording(); };
 
   const ariaSpeak = async text => {
-    setAriaCaptions(text);
-    if(ariaMuted) return;
+    if(ariaMuted){
+      // Even muted, show word-by-word highlight using timing estimate
+      const words = text.split(' ');
+      let i = 0;
+      const iv = setInterval(()=>{
+        if(i >= words.length){ clearInterval(iv); setAriaState('idle'); return; }
+        const highlighted = words.map((w,j)=>
+          j < i ? `<span style="color:var(--text2)">${w}</span>` :
+          j === i ? `<span style="color:#00d4aa;font-weight:700;text-shadow:0 0 8px rgba(0,212,170,0.6)">${w}</span>` :
+          `<span>${w}</span>`
+        ).join(' ');
+        setAriaCaptions(highlighted);
+        i++;
+      }, 120);
+      return;
+    }
     setAriaState('speaking');
+    const words = text.split(' ');
     try {
       const r = await fetch(`${API}/api/aria/speak?token=${tok}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice:ariaVoice})});
       if(!r.ok) throw new Error();
       const blob = await r.blob();
       const audio = new Audio(URL.createObjectURL(blob));
-      audio.onended = ()=>setAriaState('idle');
+      const duration = await new Promise(res => {
+        audio.onloadedmetadata = () => res(audio.duration * 1000);
+        audio.onerror = () => res(words.length * 120);
+      });
+      const msPerWord = duration / words.length;
+      let i = 0;
+      const iv = setInterval(()=>{
+        if(i >= words.length){ clearInterval(iv); return; }
+        const highlighted = words.map((w,j)=>
+          j < i ? `<span style="color:var(--text2)">${w}</span>` :
+          j === i ? `<span style="color:#00d4aa;font-weight:700;text-shadow:0 0 8px rgba(0,212,170,0.6)">${w}</span>` :
+          `<span>${w}</span>`
+        ).join(' ');
+        setAriaCaptions(highlighted);
+        i++;
+      }, msPerWord);
+      audio.onended = ()=>{ clearInterval(iv); setAriaState('idle'); setAriaCaptions(text); };
       await audio.play();
-    } catch { setTimeout(()=>setAriaState('idle'),text.length*60); }
+    } catch { 
+      let i = 0;
+      const iv = setInterval(()=>{
+        if(i >= words.length){ clearInterval(iv); setAriaState('idle'); setAriaCaptions(text); return; }
+        const highlighted = words.map((w,j)=>
+          j < i ? `<span style="color:var(--text2)">${w}</span>` :
+          j === i ? `<span style="color:#00d4aa;font-weight:700;text-shadow:0 0 8px rgba(0,212,170,0.6)">${w}</span>` :
+          `<span>${w}</span>`
+        ).join(' ');
+        setAriaCaptions(highlighted);
+        i++;
+      }, 120);
+    }
   };
 
   // ARIA text query
@@ -1056,7 +1116,6 @@ function App() {
     try {
       const r = await fetch(`${API}/api/aria/query?token=${tok}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
       const d = await r.json();
-      setAriaMessages(m=>[...m,{role:'aria',body:d.response}]);
       await ariaSpeak(d.response);
     } catch(e){ setAriaMessages(m=>[...m,{role:'aria',body:'ARIA is temporarily unavailable. Please try again.'}]); setAriaState('idle'); }
   };
@@ -1083,7 +1142,7 @@ function App() {
       const r = await fetch(`${API}/api/aria/assist-report?token=${tok}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({modality:selectedStudy.modality,body_part:selectedStudy.body_part,indication:report.indication,findings:report.findings})});
       const d = await r.json();
       setReport(prev=>({...prev,impression:d.suggestion}));
-      ariaSpeak('AI-assisted impression has been added to the report. Please review before signing.');
+      ariaSpeak(d.suggestion);
     } catch(e){ notify('AI assist failed','err'); }
   };
 
@@ -1341,11 +1400,26 @@ function App() {
                     <textarea className="rep-textarea findings" rows={6} value={report.findings} onChange={e=>setReport(r=>({...r,findings:e.target.value}))}/>
                   </div>
                   <div className="rep-section">
-                    <label>Impression</label>
-                    <textarea className="rep-textarea impression" rows={4} value={report.impression} onChange={e=>setReport(r=>({...r,impression:e.target.value}))}/>
+                    <div className={`ai-impression-panel ${ariaState==='thinking'?'generating':''}`}>
+                      <div className={`ai-impression-text ${!report.impression?'empty':''}`}
+                        dangerouslySetInnerHTML={{__html: report.impression 
+                          ? report.impression
+                            .replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#00ffcc;font-size:15px">$1</strong>')
+                            .replace(/^- /gm, '• ')
+                            .replace(/\n/g, '<br/>')
+                          : 'Click Generate AI Impression below...'
+                        }}
+                      />
+                      {report.impression && <div className="ai-impression-meta">
+                        <span className="ai-impression-badge">⚕ AI ASSISTED</span>
+                        <span className="ai-impression-badge" style={{color:'#ff9900',borderColor:'rgba(255,153,0,0.3)'}}>REQUIRES REVIEW</span>
+                        <button className="ai-speak-btn" onClick={()=>ariaSpeak(report.impression)}>🔊 Read Aloud</button>
+                        <button className="ai-speak-btn" onClick={()=>setReport(r=>({...r,impression:''}))}>✕ Clear</button>
+                      </div>}
+                    </div>
                   </div>
                   <div className="rep-section">
-                    <button className="ai-btn" onClick={aiAssistReport}>✦ AI Assist Impression</button>
+                    <button className="ai-btn" onClick={aiAssistReport}>✦ Generate AI Impression</button>
                   </div>
                 </div>
                 <div className="rep-actions">
@@ -1586,7 +1660,7 @@ function App() {
           </div>
 
           {/* Captions */}
-          <div className="aria-captions">{ariaCaptions}</div>
+          <div className="aria-captions" ref={captionsRef} dangerouslySetInnerHTML={{__html: typeof ariaCaptions === "string" ? ariaCaptions : ariaCaptions}}/>
         </div>
         <div className="aria-chat">
           {ariaMessages.map((m,i)=>(
