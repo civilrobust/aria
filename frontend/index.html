@@ -378,7 +378,7 @@ tbody td.primary{color:var(--text0);font-weight:600}
   background:rgba(0,0,0,0.35);border-radius:8px;padding:8px 10px;
   font-size:11px;color:var(--text1);font-family:var(--font-m);font-weight:300;
   line-height:1.7;min-height:42px;border:1px solid var(--border);width:100%;
-  font-style:italic;max-height:72px;overflow:hidden;
+  font-style:italic;max-height:120px;overflow-y:auto;
 }
 [data-theme="light"] .aria-captions{background:rgba(0,30,80,0.04);color:var(--text1)}
 .aria-chat{flex:1;overflow-y:auto;padding:10px}
@@ -529,223 +529,166 @@ const age = dob => { const b=new Date(dob),n=new Date(); return Math.floor((n-b)
 const fmt = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
 
-// ─── ARIA AVATAR (SVG animated face - pretty female) ──────────────
+// ─── ARIA AVATAR (cute friendly lion) ────────────────────────────
 function AriaFace({state}) {
-  const [blink,setBlink] = useState(false);
-  const [mouthOpen,setMouthOpen] = useState(0);
-  const [headTilt,setHeadTilt] = useState(0);
-  const [eyeLook,setEyeLook] = useState({x:0,y:0});
+  const [blink,setBlink] = React.useState(false);
+  const [mouthOpen,setMouthOpen] = React.useState(0);
+  const [headTilt,setHeadTilt] = React.useState(0);
 
-  useEffect(()=>{
+  React.useEffect(()=>{
     const bi = setInterval(()=>{
       setBlink(true);
       setTimeout(()=>setBlink(false), 110);
-    }, 2800+Math.random()*2400);
+    }, 3000+Math.random()*2000);
     return ()=>clearInterval(bi);
   },[]);
 
-  useEffect(()=>{
-    let interval;
+  React.useEffect(()=>{
+    let iv;
     if(state==='speaking'){
-      // More natural lip sync - varies between small/medium/large mouth openings
-      let phase = 0;
-      interval = setInterval(()=>{
-        phase++;
-        // Create natural speech rhythm: consonants close mouth, vowels open it
-        const pattern = [0.6,0.2,0.8,0.1,0.5,0.3,0.7,0.0,0.4,0.6,0.2,0.9,0.1,0.5];
-        setMouthOpen(pattern[phase % pattern.length] * 0.8);
-        setHeadTilt((Math.random()-0.5)*2.5);
-      },110);
+      const pattern=[0.7,0.2,0.9,0.1,0.6,0.3,0.8,0.05,0.5,0.7,0.15,0.95,0.1,0.6];
+      let p=0;
+      iv=setInterval(()=>{ p++; setMouthOpen(pattern[p%pattern.length]*0.8); setHeadTilt((Math.random()-0.5)*2); },100);
     } else if(state==='listening'){
-      interval = setInterval(()=>{
-        setHeadTilt((Math.random()-0.5)*1.5);
-        setEyeLook({x:(Math.random()-0.5)*2,y:(Math.random()-0.5)*1.5});
-      },300);
+      iv=setInterval(()=>{ setHeadTilt((Math.random()-0.5)*1.5); },350);
       setMouthOpen(0.08);
     } else if(state==='thinking'){
-      interval = setInterval(()=>{
-        setHeadTilt((Math.random()-0.5)*1);
-        setEyeLook({x:(Math.random()-0.5)*3,y:-Math.random()*1.5});
-      },500);
-      setMouthOpen(0.05);
-    } else {
-      setMouthOpen(0);
-      setHeadTilt(0);
-      setEyeLook({x:0,y:0});
-    }
-    return ()=>{ clearInterval(interval); };
+      iv=setInterval(()=>{ setHeadTilt((Math.random()-0.5)*1); },500);
+    } else { setMouthOpen(0); setHeadTilt(0); }
+    return ()=>clearInterval(iv);
   },[state]);
 
-  const eyeY = blink ? 62 : 58;
-  const eyeH = blink ? 1.2 : 6;
-  const mouthCurve = 66 + mouthOpen * 5;
-  const mouthDepth = mouthOpen * 11;
-  const lx = 40 + eyeLook.x;
-  const rx = 60 + eyeLook.x;
-  const iy = eyeY + eyeLook.y;
+  const eyeH = blink ? 1 : 6;
+  const mouthY = 72;
+  const mouthD = mouthOpen * 10;
 
   return (
-    <svg className="aria-face-svg" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg"
+    <svg className="aria-face-svg" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg"
          style={{transform:`rotate(${headTilt}deg)`,transition:'transform 0.12s ease'}}>
       <defs>
-        <radialGradient id="sg2" cx="45%" cy="38%" r="62%">
-          <stop offset="0%" stopColor="#fde8d0"/>
-          <stop offset="60%" stopColor="#f5c8a0"/>
-          <stop offset="100%" stopColor="#e8a870"/>
+        <radialGradient id="mane" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#e8a020"/>
+          <stop offset="60%" stopColor="#c07010"/>
+          <stop offset="100%" stopColor="#8a4a00"/>
         </radialGradient>
-        <radialGradient id="hg2" cx="50%" cy="10%" r="75%">
-          <stop offset="0%" stopColor="#5c3418"/>
-          <stop offset="50%" stopColor="#3a2010"/>
-          <stop offset="100%" stopColor="#1e0e08"/>
+        <radialGradient id="face" cx="50%" cy="40%" r="55%">
+          <stop offset="0%" stopColor="#ffd080"/>
+          <stop offset="70%" stopColor="#f0a840"/>
+          <stop offset="100%" stopColor="#d08020"/>
         </radialGradient>
-        <radialGradient id="ig2" cx="30%" cy="30%" r="65%">
-          <stop offset="0%" stopColor="#6baee8"/>
-          <stop offset="50%" stopColor="#3a7ac8"/>
-          <stop offset="100%" stopColor="#1a4a98"/>
+        <radialGradient id="muzzle" cx="50%" cy="40%" r="55%">
+          <stop offset="0%" stopColor="#fff0d0"/>
+          <stop offset="100%" stopColor="#f8d890"/>
         </radialGradient>
-        <radialGradient id="lipGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#e07080"/>
-          <stop offset="100%" stopColor="#c04060"/>
+        <radialGradient id="nose" cx="50%" cy="35%" r="55%">
+          <stop offset="0%" stopColor="#e06080"/>
+          <stop offset="100%" stopColor="#b03050"/>
         </radialGradient>
-        <linearGradient id="neckG2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f0b888"/>
-          <stop offset="100%" stopColor="#d89060"/>
-        </linearGradient>
-        <linearGradient id="clothG2" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="uniform2" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#003e9e"/>
-          <stop offset="100%" stopColor="#001860"/>
+          <stop offset="100%" stopColor="#001555"/>
         </linearGradient>
-        <filter id="softF"><feGaussianBlur stdDeviation="0.4"/></filter>
-        <filter id="glowF"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="fs"><feGaussianBlur stdDeviation="0.6"/></filter>
+        <filter id="fm"><feGaussianBlur stdDeviation="1.2"/></filter>
       </defs>
 
-      {/* NHS uniform collar */}
-      <path d="M20 118 Q35 105 50 110 Q65 105 80 118 L100 130 L0 130 Z" fill="url(#clothG2)"/>
-      {/* White collar */}
-      <path d="M44 110 L50 118 L56 110 Q53 112 50 113 Q47 112 44 110 Z" fill="white" opacity="0.85"/>
-      {/* ID badge hint */}
-      <rect x="33" y="112" width="10" height="7" rx="1" fill="white" opacity="0.3"/>
+      {/* NHS Uniform */}
+      <path d="M10 120 Q25 105 50 110 Q75 105 90 120 L100 120 L0 120 Z" fill="url(#uniform2)"/>
+      <path d="M44 110 L50 117 L56 110 Q53 112 50 113 Q47 112 44 110Z" fill="white" opacity="0.85"/>
 
-      {/* Neck */}
-      <path d="M39 90 Q50 95 61 90 L63 112 Q50 116 37 112 Z" fill="url(#neckG2)"/>
-      {/* Neck shadow */}
-      <ellipse cx="50" cy="92" rx="10" ry="4" fill="rgba(0,0,0,0.06)"/>
+      {/* Mane - big fluffy circle */}
+      <circle cx="50" cy="54" r="36" fill="url(#mane)"/>
+      {/* Mane texture - overlapping petals */}
+      {Array.from({length:12}).map((_,i)=>{
+        const angle = (i/12)*Math.PI*2;
+        const x = 50 + Math.cos(angle)*30;
+        const y = 54 + Math.sin(angle)*30;
+        return <ellipse key={i} cx={x} cy={y} rx="10" ry="7"
+          fill="#c07010" opacity="0.5"
+          transform={`rotate(${i*30} ${x} ${y})`}/>;
+      })}
+      {/* Mane highlight */}
+      <circle cx="50" cy="54" r="36" fill="none" stroke="#f0c050" strokeWidth="1" opacity="0.2"/>
 
-      {/* Head */}
-      <ellipse cx="50" cy="56" rx="28" ry="33" fill="url(#sg2)"/>
-
-      {/* ── HAIR ── */}
-      {/* Main hair shape - long, flowing */}
-      <path d="M22 44 Q20 20 50 17 Q80 20 78 44 Q74 30 50 27 Q26 30 22 44 Z" fill="url(#hg2)"/>
-      {/* Hair sides flowing down */}
-      <path d="M22 44 Q16 58 18 80 Q24 72 26 58 Z" fill="url(#hg2)"/>
-      <path d="M78 44 Q84 58 82 80 Q76 72 74 58 Z" fill="url(#hg2)"/>
-      {/* Hair highlights */}
-      <path d="M32 22 Q42 18 50 19" stroke="rgba(255,255,255,0.15)" strokeWidth="2" fill="none" strokeLinecap="round"/>
-      {/* Parting */}
-      <path d="M50 17 Q52 30 51 45" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" fill="none"/>
+      {/* Face */}
+      <circle cx="50" cy="54" r="26" fill="url(#face)"/>
 
       {/* Ears */}
-      <ellipse cx="22" cy="58" rx="4" ry="6" fill="#f0b888"/>
-      <ellipse cx="22" cy="58" rx="2.5" ry="4" fill="#e09868"/>
-      <ellipse cx="78" cy="58" rx="4" ry="6" fill="#f0b888"/>
-      <ellipse cx="78" cy="58" rx="2.5" ry="4" fill="#e09868"/>
-      {/* Earring left */}
-      <circle cx="22" cy="65" r="1.5" fill="#d4af37" opacity="0.8"/>
-      <circle cx="78" cy="65" r="1.5" fill="#d4af37" opacity="0.8"/>
+      <ellipse cx="26" cy="28" rx="9" ry="10" fill="url(#mane)"/>
+      <ellipse cx="26" cy="28" rx="5" ry="6" fill="#f0a840"/>
+      <ellipse cx="74" cy="28" rx="9" ry="10" fill="url(#mane)"/>
+      <ellipse cx="74" cy="28" rx="5" ry="6" fill="#f0a840"/>
 
-      {/* Eyebrows - arched, feminine */}
-      <path d="M30 46 Q37 42 45 43.5" stroke="#4a2810" strokeWidth="2" fill="none" strokeLinecap="round"/>
-      <path d="M55 43.5 Q63 42 70 46" stroke="#4a2810" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      {/* Eyebrows - expressive */}
+      <path d="M32 42 Q38 38 44 40" stroke="#8a4a00" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      <path d="M56 40 Q62 38 68 42" stroke="#8a4a00" strokeWidth="2" fill="none" strokeLinecap="round"/>
 
-      {/* Eye shadow */}
-      <ellipse cx="40" cy={eyeY-1} rx="8.5" ry="5" fill="rgba(180,140,200,0.12)"/>
-      <ellipse cx="60" cy={eyeY-1} rx="8.5" ry="5" fill="rgba(180,140,200,0.12)"/>
+      {/* Eyes whites */}
+      <ellipse cx="38" cy="50" rx="8" ry={eyeH} fill="white"/>
+      <ellipse cx="62" cy="50" rx="8" ry={eyeH} fill="white"/>
 
-      {/* Eyes - whites */}
-      <ellipse cx="40" cy={eyeY} rx="7.5" ry={eyeH} fill="white"/>
-      <ellipse cx="60" cy={eyeY} rx="7.5" ry={eyeH} fill="white"/>
-
-      {/* Iris & pupil */}
       {!blink && <>
-        <ellipse cx={lx} cy={iy} rx="5" ry="5" fill="url(#ig2)"/>
-        <ellipse cx={rx} cy={iy} rx="5" ry="5" fill="url(#ig2)"/>
-        {/* Limbal ring */}
-        <ellipse cx={lx} cy={iy} rx="5" ry="5" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="0.8"/>
-        <ellipse cx={rx} cy={iy} rx="5" ry="5" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="0.8"/>
+        {/* Iris - warm amber */}
+        <ellipse cx="38" cy="50" rx="5.5" ry="5.5" fill="#c07820"/>
+        <ellipse cx="62" cy="50" rx="5.5" ry="5.5" fill="#c07820"/>
+        {/* Inner iris */}
+        <ellipse cx="38" cy="50" rx="4" ry="4" fill="#a05810"/>
+        <ellipse cx="62" cy="50" rx="4" ry="4" fill="#a05810"/>
         {/* Pupils */}
-        <ellipse cx={lx} cy={iy} rx="3" ry="3" fill="#060610"/>
-        <ellipse cx={rx} cy={iy} rx="3" ry="3" fill="#060610"/>
+        <ellipse cx="38" cy="50" rx="2.8" ry="2.8" fill="#0a0808"/>
+        <ellipse cx="62" cy="50" rx="2.8" ry="2.8" fill="#0a0808"/>
         {/* Catchlights */}
-        <ellipse cx={lx-1.5} cy={iy-1.8} rx="1.4" ry="1.2" fill="white" opacity="0.95"/>
-        <ellipse cx={rx-1.5} cy={iy-1.8} rx="1.4" ry="1.2" fill="white" opacity="0.95"/>
-        <ellipse cx={lx+1.5} cy={iy+1.2} rx="0.7" ry="0.6" fill="white" opacity="0.5"/>
-        <ellipse cx={rx+1.5} cy={iy+1.2} rx="0.7" ry="0.6" fill="white" opacity="0.5"/>
+        <ellipse cx="36" cy="48" rx="1.5" ry="1.3" fill="white" opacity="0.95"/>
+        <ellipse cx="60" cy="48" rx="1.5" ry="1.3" fill="white" opacity="0.95"/>
+        <ellipse cx="40" cy="52" rx="0.8" ry="0.7" fill="white" opacity="0.4"/>
+        <ellipse cx="64" cy="52" rx="0.8" ry="0.7" fill="white" opacity="0.4"/>
       </>}
 
-      {/* Eyelashes - upper */}
-      {!blink && [[-8,-5],[- 4,-7],[0,-7.5],[4,-7],[8,-5]].map(([dx,dy],i)=>(
-        <line key={i} x1={40+dx*0.9} y1={eyeY-eyeH} x2={40+dx} y2={eyeY-eyeH+dy*0.35} stroke="#1a0808" strokeWidth="1.2" strokeLinecap="round"/>
-      ))}
-      {!blink && [[-8,-5],[-4,-7],[0,-7.5],[4,-7],[8,-5]].map(([dx,dy],i)=>(
-        <line key={i} x1={60+dx*0.9} y1={eyeY-eyeH} x2={60+dx} y2={eyeY-eyeH+dy*0.35} stroke="#1a0808" strokeWidth="1.2" strokeLinecap="round"/>
-      ))}
+      {/* Muzzle */}
+      <ellipse cx="50" cy="68" rx="16" ry="12" fill="url(#muzzle)"/>
 
-      {/* Nose - delicate */}
-      <path d="M48 60 Q46 67 44 69 Q46.5 71 50 70.5 Q53.5 71 56 69 Q54 67 52 60" stroke="#d0906070" strokeWidth="1.2" fill="none"/>
-      <ellipse cx="46" cy="69.5" rx="2.5" ry="1.8" fill="rgba(0,0,0,0.06)"/>
-      <ellipse cx="54" cy="69.5" rx="2.5" ry="1.8" fill="rgba(0,0,0,0.06)"/>
+      {/* Nose */}
+      <ellipse cx="50" cy="62" rx="6" ry="4" fill="url(#nose)"/>
+      <ellipse cx="48.5" cy="61" rx="1.5" ry="1" fill="white" opacity="0.5"/>
+
+      {/* Whiskers */}
+      <line x1="20" y1="65" x2="34" y2="67" stroke="#8a6020" strokeWidth="0.8" opacity="0.6"/>
+      <line x1="20" y1="69" x2="34" y2="69" stroke="#8a6020" strokeWidth="0.8" opacity="0.6"/>
+      <line x1="20" y1="73" x2="34" y2="71" stroke="#8a6020" strokeWidth="0.8" opacity="0.6"/>
+      <line x1="80" y1="65" x2="66" y2="67" stroke="#8a6020" strokeWidth="0.8" opacity="0.6"/>
+      <line x1="80" y1="69" x2="66" y2="69" stroke="#8a6020" strokeWidth="0.8" opacity="0.6"/>
+      <line x1="80" y1="73" x2="66" y2="71" stroke="#8a6020" strokeWidth="0.8" opacity="0.6"/>
 
       {/* Mouth */}
-      {/* Upper lip */}
-      <path d={`M37 ${mouthCurve-1} Q43 ${mouthCurve-4} 50 ${mouthCurve-2} Q57 ${mouthCurve-4} 63 ${mouthCurve-1}`}
-            stroke="url(#lipGrad)" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-      {/* Cupid's bow */}
-      <path d={`M43 ${mouthCurve-2} Q50 ${mouthCurve-5} 57 ${mouthCurve-2}`}
-            stroke="url(#lipGrad)" strokeWidth="1.2" fill="none"/>
-      {/* Lower lip */}
-      <path d={`M37 ${mouthCurve-1} Q50 ${mouthCurve + mouthDepth} 63 ${mouthCurve-1}`}
-            stroke="url(#lipGrad)" strokeWidth="2" fill={mouthOpen>0.05?'url(#lipGrad)':'none'} strokeLinecap="round" opacity={mouthOpen>0.05?0.4:1}/>
-      {/* Mouth interior */}
+      <path d={`M44 ${mouthY} Q50 ${mouthY+mouthD+3} 56 ${mouthY}`} stroke="#8a3020" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      <path d="M50 66 L50 72" stroke="#8a3020" strokeWidth="1" strokeLinecap="round"/>
       {mouthOpen > 0.08 && <>
-        <clipPath id="mouthClip">
-          <ellipse cx="50" cy={mouthCurve + mouthDepth*0.3} rx={13} ry={mouthDepth*0.6+1}/>
-        </clipPath>
-        <ellipse cx="50" cy={mouthCurve + mouthDepth*0.3} rx={13} ry={mouthDepth*0.6+1} fill="#3a0a18"/>
-        {/* Teeth */}
-        <rect x="41" y={mouthCurve} width="18" height={Math.min(mouthDepth*0.35, 5)} rx="1" fill="white" opacity="0.92"/>
+        <ellipse cx="50" cy={mouthY+mouthD*0.4+1} rx="9" ry={mouthD*0.5+1} fill="#3a0808"/>
+        <rect x="44" y={mouthY+0.5} width="12" height={Math.min(mouthD*0.35,4)} rx="1" fill="white" opacity="0.9"/>
       </>}
-      {/* Lip gloss highlight */}
-      <ellipse cx="50" cy={mouthCurve+1} rx="6" ry="1.2" fill="rgba(255,255,255,0.25)"/>
 
-      {/* Cheek blush */}
-      <ellipse cx="28" cy="66" rx="7" ry="5" fill="#f09070" opacity="0.12" filter="url(#softF)"/>
-      <ellipse cx="72" cy="66" rx="7" ry="5" fill="#f09070" opacity="0.12" filter="url(#softF)"/>
+      {/* Cheek spots */}
+      <ellipse cx="30" cy="62" rx="5" ry="3.5" fill="#e08030" opacity="0.18" filter="url(#fm)"/>
+      <ellipse cx="70" cy="62" rx="5" ry="3.5" fill="#e08030" opacity="0.18" filter="url(#fm)"/>
 
-      {/* State rings around head */}
+      {/* State rings */}
       {state==='speaking' && <>
-        <circle cx="50" cy="56" r="32" fill="none" stroke="#00aaff" strokeWidth="1.5" opacity="0.25" strokeDasharray="3 4">
-          <animateTransform attributeName="transform" type="rotate" from="0 50 56" to="360 50 56" dur="4s" repeatCount="indefinite"/>
-        </circle>
-        <circle cx="50" cy="56" r="36" fill="none" stroke="#00aaff" strokeWidth="0.8" opacity="0.12" strokeDasharray="2 6">
-          <animateTransform attributeName="transform" type="rotate" from="360 50 56" to="0 50 56" dur="6s" repeatCount="indefinite"/>
+        <circle cx="50" cy="54" r="38" fill="none" stroke="#00d4aa" strokeWidth="1.5" opacity="0.25" strokeDasharray="3 5">
+          <animateTransform attributeName="transform" type="rotate" from="0 50 54" to="360 50 54" dur="4s" repeatCount="indefinite"/>
         </circle>
       </>}
-      {state==='listening' && <>
-        <circle cx="50" cy="56" r="32" fill="none" stroke="#e8001e" strokeWidth="1.5" opacity="0.3">
-          <animate attributeName="r" values="32;35;32" dur="0.8s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values="0.3;0.08;0.3" dur="0.8s" repeatCount="indefinite"/>
-        </circle>
-      </>}
+      {state==='listening' && <circle cx="50" cy="54" r="38" fill="none" stroke="#e8001e" strokeWidth="1.5" opacity="0.25">
+        <animate attributeName="r" values="38;42;38" dur="0.9s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.25;0.06;0.25" dur="0.9s" repeatCount="indefinite"/>
+      </circle>}
       {state==='thinking' && <>
-        <circle cx="50" cy="56" r="32" fill="none" stroke="#b090ff" strokeWidth="1" opacity="0.2" strokeDasharray="8 4">
-          <animateTransform attributeName="transform" type="rotate" from="0 50 56" to="360 50 56" dur="3s" repeatCount="indefinite"/>
+        <circle cx="50" cy="54" r="38" fill="none" stroke="#b090ff" strokeWidth="1" opacity="0.2" strokeDasharray="6 4">
+          <animateTransform attributeName="transform" type="rotate" from="0 50 54" to="360 50 54" dur="3s" repeatCount="indefinite"/>
         </circle>
-        {/* Thinking dots */}
         {[0,1,2].map(i=>(
-          <circle key={i} cx={44+i*6} cy="20" r="2" fill="#b090ff" opacity="0.6">
-            <animate attributeName="cy" values="20;16;20" dur="0.9s" begin={`${i*0.2}s`} repeatCount="indefinite"/>
-            <animate attributeName="opacity" values="0.3;0.8;0.3" dur="0.9s" begin={`${i*0.2}s`} repeatCount="indefinite"/>
+          <circle key={i} cx={44+i*6} cy="14" r="2.2" fill="#b090ff" opacity="0.6">
+            <animate attributeName="cy" values="14;9;14" dur="1s" begin={`${i*0.22}s`} repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.3;0.9;0.3" dur="1s" begin={`${i*0.22}s`} repeatCount="indefinite"/>
           </circle>
         ))}
       </>}
@@ -992,6 +935,103 @@ function App() {
   };
 
   // ARIA speak
+    // ── MICROPHONE — Web Speech API (live transcription) ─────────
+  const recognitionRef = React.useRef(null);
+  const mediaRecorderRef = React.useRef(null);
+  const audioChunksRef = React.useRef([]);
+  const liveTextRef = React.useRef('');
+
+  const startRecording = async () => {
+    liveTextRef.current = '';
+
+    // Try Web Speech API first (live transcription in browser)
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-GB';
+      recognitionRef.current = recognition;
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+        setAriaState('listening');
+        setAriaCaptions('🎙 Listening — speak now...');
+      };
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        let final = '';
+        for(let i = event.resultIndex; i < event.results.length; i++) {
+          const t = event.results[i][0].transcript;
+          if(event.results[i].isFinal) { final += t; }
+          else { interim += t; }
+        }
+        if(final) liveTextRef.current += final;
+        const display = liveTextRef.current + (interim ? ' ' + interim : '');
+        setAriaCaptions('🎙 ' + display);
+      };
+
+      recognition.onerror = (e) => {
+        setAriaCaptions('Mic error: ' + e.error + ' — try typing instead');
+        setAriaState('idle');
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+        const text = liveTextRef.current.trim();
+        if(text) {
+          setAriaCaptions('You said: "' + text + '"');
+          ariaQuery(text);
+        } else {
+          setAriaCaptions('Nothing heard — tap TAP TO TALK and try again');
+          setAriaState('idle');
+        }
+      };
+
+      recognition.start();
+      return;
+    }
+
+    // Fallback: MediaRecorder + Whisper
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      audioChunksRef.current = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      const recorder = new MediaRecorder(stream, {mimeType});
+      mediaRecorderRef.current = recorder;
+      recorder.ondataavailable = e => { if(e.data.size>0) audioChunksRef.current.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t=>t.stop());
+        setAriaState('thinking');
+        setAriaCaptions('Transcribing via Whisper...');
+        const blob = new Blob(audioChunksRef.current, {type:mimeType});
+        const fd = new FormData();
+        fd.append('audio', blob, 'recording.webm');
+        try {
+          const r = await fetch(`${API}/api/aria/transcribe?token=${tok}`, {method:'POST', body:fd});
+          const d = await r.json();
+          const text = d.text?.trim();
+          if(text) { setAriaCaptions('You said: "' + text + '"'); await ariaQuery(text); }
+          else { setAriaCaptions('Nothing heard — try again'); setAriaState('idle'); }
+        } catch(e) { setAriaCaptions('Transcription failed'); setAriaState('idle'); }
+      };
+      recorder.start();
+      setIsRecording(true);
+      setAriaState('listening');
+      setAriaCaptions('🎙 Listening via Whisper... tap STOP when done');
+    } catch(e) { setAriaCaptions('Microphone access denied — check browser permissions'); setAriaState('idle'); }
+  };
+
+  const stopRecording = () => {
+    if(recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
+    if(mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
+    setIsRecording(false);
+  };
+
+  const toggleRecording = () => { if(isRecording) stopRecording(); else startRecording(); };
+
   const ariaSpeak = async text => {
     setAriaCaptions(text);
     if(ariaMuted) return;
@@ -1527,7 +1567,7 @@ function App() {
 
           {/* Big TALK button */}
           <div className="talk-btn-wrap">
-            <button className={`talk-btn ${isRecording?'recording':'idle'}`} onClick={()=>setIsRecording(r=>!r)}>
+            <button className={`talk-btn ${isRecording?'recording':'idle'}`} onClick={toggleRecording}>
               <span className="talk-btn-icon">{isRecording?'⏹':'🎙'}</span>
               {isRecording?'STOP RECORDING':'TAP TO TALK'}
             </button>
